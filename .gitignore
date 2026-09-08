@@ -1,0 +1,10 @@
+.DS_Store
+.env
+.env.*
+*.log
+node_modules/
+.research/
+private-acceptance/
+dist/
+coverage/
+test-results/

@@ -1,0 +1,17 @@
+{
+  "name": "travel-art-album-skill",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reference-image art workflow and single-file offline flipbook skill prototype",
+  "scripts": {
+    "build:prototype": "node scripts/build-prototype.mjs",
+    "check": "node scripts/check-project.mjs",
+    "test": "npm run build:prototype && node tests/prototype-smoke.mjs"
+  },
+  "dependencies": {
+    "page-flip": "2.0.7"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.63.0"
+  }
+}

@@ -20,8 +20,14 @@ const result = await build({
   minify: true,
   legalComments: "none",
 });
-const bundle = new TextDecoder().decode(result.outputFiles[0].contents).replaceAll("</script", "<\\/script");
-const licenses = `Reference project (MIT):\n${referenceLicense}\n\nThree.js (MIT):\n${threeLicense}`.replaceAll("-->", "--&gt;");
+const bundle = new TextDecoder()
+  .decode(result.outputFiles[0].contents)
+  .replaceAll("</script", "<\\/script");
+const licenses =
+  `Reference project (MIT):\n${referenceLicense}\n\nThree.js (MIT):\n${threeLicense}`.replaceAll(
+    "-->",
+    "--&gt;",
+  );
 const html = `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -53,4 +59,6 @@ const html = `<!doctype html>
 const output = resolve(root, "dist/prototype.html");
 await mkdir(dirname(output), { recursive: true });
 await writeFile(output, html, "utf8");
-console.log(`built ${output} (${Buffer.byteLength(html)} bytes, 3D bundle ${Buffer.byteLength(bundle)} bytes)`);
+console.log(
+  `built ${output} (${Buffer.byteLength(html)} bytes, 3D bundle ${Buffer.byteLength(bundle)} bytes)`,
+);

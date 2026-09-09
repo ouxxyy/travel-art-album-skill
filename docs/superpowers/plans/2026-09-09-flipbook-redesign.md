@@ -21,6 +21,7 @@
 ### Task 1: Per-photo style manifest contract
 
 **Files:**
+
 - Create: `examples/mixed-style-manifest.json`
 - Create: `scripts/validate-manifest.mjs`
 - Create: `tests/manifest.test.mjs`
@@ -29,6 +30,7 @@
 - Modify: `package.json`
 
 **Interfaces:**
+
 - Consumes: JSON object `{ version, book, workflow, photos[] }`.
 - Produces: `validateManifest(value): string[]`; empty array means batch-style gate is satisfied.
 
@@ -42,6 +44,7 @@
 ### Task 2: Licensed 3D interaction adaptation and offline prototype
 
 **Files:**
+
 - Create: `src/flipbook-3d/main.js`
 - Create: `src/flipbook-3d/interaction.js`
 - Create: `src/flipbook-3d/style.css`
@@ -52,6 +55,7 @@
 - Modify: `THIRD_PARTY_NOTICES.md`
 
 **Interfaces:**
+
 - Consumes: Three.js and eight in-code canvas placeholder page textures.
 - Produces: `dist/prototype.html` with `window.albumPrototype = { ready, renderer, currentSheet, targetSheet, sheetCount, navigate }`.
 
@@ -65,10 +69,12 @@
 ### Task 3: Evidence and independent review
 
 **Files:**
+
 - Create: `docs/flipbook-redesign-report.md`
 - Modify: `docs/stage-1-report.md`
 
 **Interfaces:**
+
 - Consumes: fresh test output, source commit/license inspection, and independent reviewer findings.
 - Produces: a concise evidence report and an attachable `dist/prototype.html`.
 

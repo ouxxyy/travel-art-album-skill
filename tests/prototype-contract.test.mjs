@@ -7,7 +7,10 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 test("3D runtime owns page geometry, interaction, and bounded rendering", async () => {
   const main = await read("src/flipbook-3d/main.js");
   assert.match(main, /new THREE\.OrthographicCamera/);
-  assert.match(main, /new THREE\.PlaneGeometry\(PAGE_WIDTH, PAGE_HEIGHT, PAGE_SUBDIVISIONS/);
+  assert.match(
+    main,
+    /new THREE\.PlaneGeometry\(PAGE_WIDTH, PAGE_HEIGHT, PAGE_SUBDIVISIONS/,
+  );
   assert.match(main, /positions\.setZ/);
   assert.match(main, /THREE\.FrontSide/);
   assert.match(main, /THREE\.BackSide/);
@@ -22,7 +25,11 @@ test("3D runtime owns page geometry, interaction, and bounded rendering", async 
 test("reader supports mixed styles and complete controls", async () => {
   const main = await read("src/flipbook-3d/main.js");
   const interaction = await read("src/flipbook-3d/interaction.js");
-  for (const style of ["impasto-miniature", "isometric-healing-blocks", "papercraft-travel"]) {
+  for (const style of [
+    "impasto-miniature",
+    "isometric-healing-blocks",
+    "papercraft-travel",
+  ]) {
     assert.match(main, new RegExp(style));
   }
   assert.match(main, /pointerdown/);

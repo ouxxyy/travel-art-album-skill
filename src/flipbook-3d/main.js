@@ -1,5 +1,15 @@
 import * as THREE from "three";
-import { chooseDirection, clamp, dragTarget, edgePreviewDirection, shouldCompleteDrag } from "./interaction.js";
+import {
+  chooseDirection,
+  clamp,
+  dragTarget,
+  edgePreviewDirection,
+  PREVIEW_EASING,
+  releaseDecision,
+  SETTLE,
+  springStep,
+  SPRING,
+} from "./interaction.js";
 
 const canvas = document.querySelector("#book-scene");
 const previousButton = document.querySelector("#previous-page");
@@ -17,6 +27,16 @@ const SHADOW_MAP_SIZE = 1024;
 const EDGE_PREVIEW_AMOUNT = 0.055;
 const EDGE_PREVIEW_ZONE = 30;
 const SETTLE_EPSILON = 0.001;
+// 手感参数：弯折幅度、页角扭转、静止纸弧与书脊暗缝。
+const BEND_AMOUNT = 0.16;
+const TWIST_AMOUNT = 0.09;
+const REST_CURL = 0.014;
+const GUTTER_WIDTH = 0.085;
+const GUTTER_ALPHA = 0.3;
+const COVER_GUTTER_ALPHA = 0.16;
+// 松手后若停顿则视为悬停，甩动速度按指数衰减。
+const FLICK_VELOCITY_DECAY_MS = 90;
+const FLICK_VELOCITY_CAP = 6;
 
 const pageSpecs = [
   { kind: "cover", title: "沿途拾光", subtitle: "TRAVEL ART BOOK · 3D PROTOTYPE" },
@@ -71,7 +91,20 @@ function drawArt(context, spec, width, height) {
   }
 }
 
-function makePageTexture(spec) {
+function gutterAlphaFor(kind) {
+  return kind === "cover" || kind === "back" ? COVER_GUTTER_ALPHA : GUTTER_ALPHA;
+}
+
+// 书脊暗缝：贴着书脊的柔和渐变，让摊开的跨页有真实接缝深度。
+function drawGutter(context, width, height, alpha) {
+  const gutter = context.createLinearGradient(0, 0, width * GUTTER_WIDTH, 0);
+  gutter.addColorStop(0, `rgba(24,20,12,${alpha})`);
+  gutter.addColorStop(1, "rgba(24,20,12,0)");
+  context.fillStyle = gutter;
+  context.fillRect(0, 0, width * GUTTER_WIDTH, height);
+}
+
+function makePageCanvas(spec) {
   const textureCanvas = document.createElement("canvas");
   textureCanvas.width = 768; textureCanvas.height = 1024;
   const context = textureCanvas.getContext("2d");
@@ -90,16 +123,28 @@ function makePageTexture(spec) {
   context.fillStyle = lightText ? "rgba(255,255,255,.72)" : "#696b65";
   context.font = "18px sans-serif"; context.fillText(spec.subtitle, 84, spec.kind === "cover" ? 265 : 865);
   context.font = "14px sans-serif"; context.fillText("PROTOTYPE PLACEHOLDER", 84, 952);
+  return textureCanvas;
+}
+
+function canvasTexture(textureCanvas) {
   const texture = new THREE.CanvasTexture(textureCanvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
   return texture;
 }
 
-function mirrored(texture) {
-  const clone = texture.clone(); clone.needsUpdate = true;
-  clone.wrapS = THREE.RepeatWrapping; clone.repeat.x = -1; clone.offset.x = 1;
-  return clone;
+// 背面纹理：内容镜像保证从背面读字方向正确，暗缝画在镜像后的书脊一侧。
+function makeBackCanvas(spec) {
+  const frontCanvas = makePageCanvas(spec);
+  const backCanvas = document.createElement("canvas");
+  backCanvas.width = frontCanvas.width; backCanvas.height = frontCanvas.height;
+  const context = backCanvas.getContext("2d");
+  context.translate(backCanvas.width, 0);
+  context.scale(-1, 1);
+  context.drawImage(frontCanvas, 0, 0);
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  drawGutter(context, backCanvas.width, backCanvas.height, gutterAlphaFor(spec.kind));
+  return backCanvas;
 }
 
 let renderer;
@@ -113,22 +158,24 @@ try {
 if (renderer) {
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1;
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color("#f4f3ef");
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 20);
 camera.position.set(0, 0, 4); camera.lookAt(0, 0, 0);
-scene.add(new THREE.HemisphereLight("#ffffff", "#b7b3a9", 1.25));
-const keyLight = new THREE.DirectionalLight("#ffffff", 2.8);
-keyLight.position.set(-2.4, 3.2, 4); keyLight.castShadow = true;
+scene.add(new THREE.HemisphereLight("#ffffff", "#e9e9e6", 0.9));
+const keyLight = new THREE.DirectionalLight("#ffffff", 2.65);
+keyLight.position.set(-2.8, 2.7, 5.2); keyLight.castShadow = true;
 keyLight.shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
 keyLight.shadow.camera.left=-3;keyLight.shadow.camera.right=3;keyLight.shadow.camera.top=3;keyLight.shadow.camera.bottom=-3;
-keyLight.shadow.bias=-0.0002;keyLight.shadow.normalBias=.012;scene.add(keyLight);
+keyLight.shadow.bias=-0.00025;keyLight.shadow.normalBias=.012;keyLight.shadow.radius=3;scene.add(keyLight);
+const rimLight = new THREE.PointLight("#ffffff", .5, 8, 2);
+rimLight.position.set(2.6, 1.6, 1.2);scene.add(rimLight);
 const table = new THREE.Mesh(new THREE.PlaneGeometry(12,12),new THREE.MeshStandardMaterial({color:"#f4f3ef",roughness:1}));
-table.position.z=-.08;table.receiveShadow = true;scene.add(table);
+table.position.z=-.035;table.receiveShadow = true;scene.add(table);
 
 const bookRig = new THREE.Group(); scene.add(bookRig);
 const sheets = [];
@@ -136,8 +183,10 @@ for (let index = 0; index < pageSpecs.length / 2; index += 1) {
   const geometry = new THREE.PlaneGeometry(PAGE_WIDTH, PAGE_HEIGHT, PAGE_SUBDIVISIONS, 1);
   geometry.translate(PAGE_WIDTH / 2, 0, 0);
   const original = Float32Array.from(geometry.attributes.position.array);
-  const frontMaterial = new THREE.MeshStandardMaterial({ map: makePageTexture(pageSpecs[index * 2]), side: THREE.FrontSide, roughness: .82, metalness: 0 });
-  const backMaterial = new THREE.MeshStandardMaterial({ map: mirrored(makePageTexture(pageSpecs[index * 2 + 1])), side: THREE.BackSide, roughness: .86, metalness: 0 });
+  const frontCanvas = makePageCanvas(pageSpecs[index * 2]);
+  drawGutter(frontCanvas.getContext("2d"), frontCanvas.width, frontCanvas.height, gutterAlphaFor(pageSpecs[index * 2].kind));
+  const frontMaterial = new THREE.MeshStandardMaterial({ map: canvasTexture(frontCanvas), side: THREE.FrontSide, roughness: .82, metalness: 0, shadowSide: THREE.DoubleSide });
+  const backMaterial = new THREE.MeshStandardMaterial({ map: canvasTexture(makeBackCanvas(pageSpecs[index * 2 + 1])), side: THREE.BackSide, roughness: .86, metalness: 0, shadowSide: THREE.DoubleSide });
   const group = new THREE.Group();
   const front = new THREE.Mesh(geometry, frontMaterial); const back = new THREE.Mesh(geometry, backMaterial);
   front.castShadow = true; front.receiveShadow = true; back.castShadow = true; back.receiveShadow = true;
@@ -157,16 +206,26 @@ let hoverDirection = 0;
 let animationFrame = null;
 let previousFrame = performance.now();
 let renderCount = 0;
+// 弹簧状态与边缘预览偏移；motionSign 记录翻页方向供页角扭转使用。
+let spring = { value: 0, velocity: 0 };
+let springMode = "fall";
+let previewAmount = 0;
+let motionSign = 1;
 
 function updateGeometry(sheet, amount) {
   const positions = sheet.geometry.attributes.position;
+  const bend = Math.sin(amount * Math.PI);
+  const twist = bend * motionSign * TWIST_AMOUNT;
   for (let vertex = 0; vertex < positions.count; vertex += 1) {
     const offset = vertex * 3;
     const x = sheet.original[offset];
-    const curve = Math.sin((x / PAGE_WIDTH) * Math.PI) * Math.sin(amount * Math.PI) * .16;
-    positions.setX(vertex, x * (1 - Math.sin(amount * Math.PI) * .025));
+    const widthRatio = x / PAGE_WIDTH;
+    const heightRatio = sheet.original[offset + 1] / (PAGE_HEIGHT / 2);
+    positions.setX(vertex, x * (1 - bend * .025));
     positions.setY(vertex, sheet.original[offset + 1]);
-    positions.setZ(vertex, curve);
+    positions.setZ(vertex, Math.sin(widthRatio * Math.PI) * bend * BEND_AMOUNT
+      + widthRatio * heightRatio * twist
+      + REST_CURL * Math.sin(widthRatio * Math.PI));
   }
   positions.needsUpdate = true;
   sheet.geometry.computeVertexNormals();
@@ -196,6 +255,7 @@ function updateStatus() {
 }
 
 function requestRender() { if (animationFrame === null) { previousFrame = performance.now(); animationFrame = requestAnimationFrame(animate); } }
+
 function navigate(delta) {
   if (mobileMode) {
     targetPage = clamp(targetPage + delta, 0, pageSpecs.length - 1);
@@ -206,24 +266,36 @@ function navigate(delta) {
     targetPage = targetSheet <= 0 ? 0 : targetSheet >= sheetCount ? pageSpecs.length - 1 : targetSheet * 2;
     targetFocus = 0;
   }
-  hoverDirection = 0; updateStatus(); requestRender();
+  springMode = "fall";
+  hoverDirection = 0; previewAmount = 0; updateStatus(); requestRender();
 }
 
 function animate(time) {
   animationFrame = null;
   const delta = Math.min((time-previousFrame)/1000,.05); previousFrame=time;
   if (!pointerStart) {
-    const previewTarget = clamp(targetSheet + hoverDirection * EDGE_PREVIEW_AMOUNT, 0, sheetCount);
-    if (reducedMotion) currentProgress = targetSheet;
-    else currentProgress += (previewTarget-currentProgress) * (1-Math.exp(-8*delta));
-    if (Math.abs(previewTarget-currentProgress)<SETTLE_EPSILON) currentProgress=previewTarget;
+    if (reducedMotion) { spring.value = targetSheet; spring.velocity = 0; previewAmount = 0; }
+    else {
+      const next = springStep({ value: spring.value, velocity: spring.velocity, target: targetSheet, delta, ...SPRING[springMode] });
+      spring.value = next.value; spring.velocity = next.velocity;
+      if (Math.abs(targetSheet - spring.value) < SETTLE.distance && Math.abs(spring.velocity) < SETTLE.velocity) { spring.value = targetSheet; spring.velocity = 0; }
+      const previewTarget = hoverDirection * EDGE_PREVIEW_AMOUNT;
+      const easing = previewTarget > previewAmount ? PREVIEW_EASING.attack : PREVIEW_EASING.release;
+      previewAmount += (previewTarget - previewAmount) * (1 - Math.exp(-easing * delta));
+      if (Math.abs(previewTarget - previewAmount) < SETTLE_EPSILON) previewAmount = previewTarget;
+    }
     if (reducedMotion) currentFocus = targetFocus;
     else currentFocus += (targetFocus-currentFocus) * (1-Math.exp(-10*delta));
     if (Math.abs(targetFocus-currentFocus)<SETTLE_EPSILON) currentFocus=targetFocus;
+    currentProgress = clamp(spring.value + previewAmount, 0, sheetCount);
   }
+  motionSign = pointerStart ? pointerStart.direction : Math.abs(spring.velocity) > .002 ? Math.sign(spring.velocity) : motionSign;
   updateBook(); renderer.render(scene,camera); renderCount += 1;
-  const restingTarget = clamp(targetSheet + hoverDirection * EDGE_PREVIEW_AMOUNT,0,sheetCount);
-  if (pointerStart || Math.abs(restingTarget-currentProgress)>=SETTLE_EPSILON || Math.abs(targetFocus-currentFocus)>=SETTLE_EPSILON) requestRender();
+  const settled = !pointerStart
+    && Math.abs(targetSheet - spring.value) < SETTLE.distance && Math.abs(spring.velocity) < SETTLE.velocity
+    && Math.abs(targetFocus-currentFocus) < SETTLE_EPSILON
+    && Math.abs(hoverDirection * EDGE_PREVIEW_AMOUNT - previewAmount) < SETTLE_EPSILON;
+  if (!settled) requestRender();
 }
 
 function screenMetrics() {
@@ -232,15 +304,21 @@ function screenMetrics() {
 }
 
 canvas.addEventListener("pointerdown", (event) => {
-  if (!event.isPrimary) return; hoverDirection=0;
-  const metrics=screenMetrics(); const baseSheet=Math.round(targetSheet); const direction=chooseDirection(baseSheet,sheetCount,event.clientX,metrics.centerX);
-  pointerStart={pointerId:event.pointerId,x:event.clientX,y:event.clientY,time:performance.now(),baseSheet,direction,pageWidth:metrics.pageWidth,fraction:0,moved:false,mobile:mobileMode};
-  canvas.classList.add("is-dragging"); canvas.setPointerCapture?.(event.pointerId); requestRender();
+  if (!event.isPrimary) return;
+  const metrics=screenMetrics();
+  const seededFraction = previewAmount > 0 ? previewAmount : 0;
+  const seededDirection = previewAmount > 0 ? hoverDirection : 0;
+  hoverDirection=0; previewAmount=0;
+  const baseSheet=clamp(Math.round(spring.value),0,sheetCount);
+  const direction=seededDirection || chooseDirection(baseSheet,sheetCount,event.clientX,metrics.centerX);
+  pointerStart={pointerId:event.pointerId,x:event.clientX,y:event.clientY,time:performance.now(),baseSheet,direction,pageWidth:metrics.pageWidth,startFraction:seededFraction,fraction:seededFraction,moved:false,mobile:mobileMode,velocity:0,lastMoveAt:performance.now()};
+  spring.value=clamp(currentProgress,0,sheetCount); spring.velocity=0;
+  canvas.classList.add("is-dragging"); try{canvas.setPointerCapture?.(event.pointerId)}catch{} requestRender();
 });
 canvas.addEventListener("pointermove", (event) => {
   if (!pointerStart) {
     if (reducedMotion || event.pointerType === "touch") return;
-    const metrics=screenMetrics(); const direction=edgePreviewDirection({sheet:Math.round(targetSheet),sheetCount,pointerX:event.clientX,centerX:metrics.centerX,pageWidth:metrics.pageWidth,edgeZone:EDGE_PREVIEW_ZONE});
+    const metrics=screenMetrics(); const direction=edgePreviewDirection({sheet:Math.round(spring.value),sheetCount,pointerX:event.clientX,centerX:metrics.centerX,pageWidth:metrics.pageWidth,edgeZone:EDGE_PREVIEW_ZONE});
     if (direction!==hoverDirection) {hoverDirection=direction;requestRender();} return;
   }
   if (event.pointerId!==pointerStart.pointerId) return;
@@ -248,25 +326,33 @@ canvas.addEventListener("pointermove", (event) => {
   if (Math.abs(deltaX)>6 && Math.abs(deltaX)>Math.abs(deltaY)*.8) pointerStart.moved=true;
   if (!pointerStart.moved) return;
   if (pointerStart.mobile) { event.preventDefault(); return; }
-  const drag=dragTarget({baseSheet:pointerStart.baseSheet,direction:pointerStart.direction,deltaX,pageWidth:pointerStart.pageWidth,sheetCount});
-  pointerStart.fraction=drag.fraction; currentProgress=drag.progress; event.preventDefault(); requestRender();
+  const drag=dragTarget({baseSheet:pointerStart.baseSheet,direction:pointerStart.direction,deltaX,pageWidth:pointerStart.pageWidth,sheetCount,startFraction:pointerStart.startFraction});
+  const now=performance.now(); const seconds=Math.max(1,now-pointerStart.lastMoveAt)/1000;
+  const instant=(drag.fraction-pointerStart.fraction)/seconds;
+  pointerStart.velocity=pointerStart.velocity*.5+instant*.5;
+  pointerStart.lastMoveAt=now; pointerStart.fraction=drag.fraction;
+  spring.value=drag.progress; spring.velocity=0; currentProgress=drag.progress; event.preventDefault(); requestRender();
 });
 canvas.addEventListener("pointerup", (event) => {
   const start=pointerStart; if (!start || event.pointerId!==start.pointerId) return;
-  pointerStart=null;canvas.classList.remove("is-dragging");canvas.releasePointerCapture?.(event.pointerId);
+  pointerStart=null;canvas.classList.remove("is-dragging");try{canvas.releasePointerCapture?.(event.pointerId)}catch{};
   if (start.mobile && start.moved) navigate(event.clientX < start.x ? 1 : -1);
   else if (start.moved) {
-    targetSheet=clamp(start.baseSheet+(shouldCompleteDrag(start.fraction,performance.now()-start.time)?start.direction:0),0,sheetCount);
+    const pausedVelocity=start.velocity*Math.exp(-(performance.now()-start.lastMoveAt)/FLICK_VELOCITY_DECAY_MS);
+    const completed=releaseDecision({fraction:start.fraction,elapsedMs:performance.now()-start.time,velocity:pausedVelocity})==="complete";
+    targetSheet=clamp(start.baseSheet+(completed?start.direction:0),0,sheetCount);
     targetPage=targetSheet<=0?0:targetSheet>=sheetCount?pageSpecs.length-1:targetSheet*2;
     targetFocus=0;
+    springMode=completed?"fall":"return";
+    spring.velocity=completed?clamp(start.velocity*start.direction,-FLICK_VELOCITY_CAP,FLICK_VELOCITY_CAP):0;
   }
   else navigate(event.clientX<canvas.getBoundingClientRect().left+canvas.clientWidth/2?-1:1);
   updateStatus();requestRender();
 });
-canvas.addEventListener("pointercancel",()=>{pointerStart=null;canvas.classList.remove("is-dragging");requestRender();});
+canvas.addEventListener("pointercancel",()=>{pointerStart=null;canvas.classList.remove("is-dragging");springMode="return";requestRender();});
 canvas.addEventListener("pointerleave",()=>{if(!pointerStart&&hoverDirection!==0){hoverDirection=0;requestRender();}});
 previousButton.addEventListener("click",()=>navigate(-1)); nextButton.addEventListener("click",()=>navigate(1));
-addEventListener("keydown",(event)=>{if(event.key==="ArrowLeft")navigate(-1);if(event.key==="ArrowRight"||event.key===" "){event.preventDefault();navigate(1);}if(event.key==="Home"){targetPage=0;targetSheet=0;targetFocus=0;updateStatus();requestRender();}if(event.key==="End"){targetPage=pageSpecs.length-1;targetSheet=sheetCount;targetFocus=0;updateStatus();requestRender();}});
+addEventListener("keydown",(event)=>{if(event.key==="ArrowLeft")navigate(-1);if(event.key==="ArrowRight"||event.key===" "){event.preventDefault();navigate(1);}if(event.key==="Home"){targetPage=0;targetSheet=0;targetFocus=0;springMode="fall";updateStatus();requestRender();}if(event.key==="End"){targetPage=pageSpecs.length-1;targetSheet=sheetCount;targetFocus=0;springMode="fall";updateStatus();requestRender();}});
 
 function resize(){const width=innerWidth,height=innerHeight,aspect=width/Math.max(1,height);mobileMode=width<620;targetFocus=focusForPage(targetPage);const halfWidth=mobileMode?PAGE_WIDTH*.55:PAGE_WIDTH*1.2;const halfHeight=Math.max(.68,halfWidth/aspect);renderer.setPixelRatio(Math.min(devicePixelRatio,MAX_PIXEL_RATIO));renderer.setSize(width,height,false);camera.left=-halfHeight*aspect;camera.right=halfHeight*aspect;camera.top=halfHeight;camera.bottom=-halfHeight;camera.updateProjectionMatrix();updateStatus();requestRender();}
 addEventListener("resize",resize);resize();updateStatus();loading.hidden=true;

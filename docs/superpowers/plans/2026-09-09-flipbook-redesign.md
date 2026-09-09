@@ -4,13 +4,13 @@
 
 **Goal:** Replace the weak flipbook shell with the licensed reference runtime’s book-stage interaction and make all three art styles selectable per photo through a validated production manifest.
 
-**Architecture:** Keep StPageFlip 2.0.7 as the embedded rendering engine, but replace the surrounding stage, page materials, edge positioning, controls, and state handling with an adaptation of the MIT installable 2D runtime at reference commit `53a9df7`. Add a small JSON manifest contract and validator; image generation remains agent-driven and blocked until every photo has a confirmed style.
+**Architecture:** Use the licensed interaction and camera concepts from 3D Book 2 at reference commit `53a9df7`, with an independently implemented Three.js curved-page engine so the shareable artifact does not inherit the unresolved `three.modifiers` license gap. Add a small JSON manifest contract and validator; image generation remains agent-driven and blocked until every photo has a confirmed style.
 
-**Tech Stack:** Node.js ESM, vanilla HTML/CSS/JavaScript, StPageFlip 2.0.7, Playwright Core with local Google Chrome.
+**Tech Stack:** Node.js ESM, vanilla HTML/CSS/JavaScript, Three.js 0.185.1, esbuild, Playwright Core with local Google Chrome.
 
 ## Global Constraints
 
-- Only reuse files under the reference repository’s MIT-covered installable skill; do not copy excluded 3D examples or media.
+- 2D, 3D, and media may be used when their individual license or user ownership is verified; private originals never enter the shareable package.
 - The generated prototype must be one self-contained HTML file that opens from `file://` with zero HTTP(S) requests.
 - The three allowed styles are `impasto-miniature`, `isometric-healing-blocks`, and `papercraft-travel`.
 - Every photo must have an explicit `style` and `style_confirmed: true` before batch generation.
@@ -39,9 +39,12 @@
 - [ ] **Step 5: Run `node --test tests/manifest.test.mjs` and `node scripts/validate-manifest.mjs examples/mixed-style-manifest.json`**, expecting both exit 0.
 - [ ] **Step 6: Commit** with `feat: add per-photo style manifest gate`.
 
-### Task 2: MIT runtime adaptation and offline prototype
+### Task 2: Licensed 3D interaction adaptation and offline prototype
 
 **Files:**
+- Create: `src/flipbook-3d/main.js`
+- Create: `src/flipbook-3d/interaction.js`
+- Create: `src/flipbook-3d/style.css`
 - Modify: `scripts/build-prototype.mjs`
 - Modify: `tests/prototype-smoke.mjs`
 - Create: `tests/prototype-contract.test.mjs`
@@ -49,13 +52,13 @@
 - Modify: `THIRD_PARTY_NOTICES.md`
 
 **Interfaces:**
-- Consumes: vendored `vendor/page-flip/page-flip.browser.js` and four in-code placeholder art plates.
-- Produces: `dist/prototype.html` with `window.albumPrototype = { flip, pageCount, navigate }`.
+- Consumes: Three.js and eight in-code canvas placeholder page textures.
+- Produces: `dist/prototype.html` with `window.albumPrototype = { ready, renderer, currentSheet, targetSheet, sheetCount, navigate }`.
 
-- [ ] **Step 1: Write contract tests** for hard covers, soft inner leaves, `data-edge`, `data-layout`, 25% closed-cover offsets, left/right spine shadows, bottom-corner flips, mixed style identifiers, embedded reference MIT notice, and absence of external resource tags.
+- [ ] **Step 1: Write contract tests** for bundled Three.js, curved vertex deformation, front/back page textures, dynamic shadows, edge preview, mixed style identifiers, embedded licenses, and absence of external resource tags.
 - [ ] **Step 2: Run `node --test tests/prototype-contract.test.mjs`** and verify it fails against the old shell.
-- [ ] **Step 3: Rebuild the shell** with reference-derived room/book-rig proportions, cloth/paper textures encoded as CSS data URLs, edge centering, page-bound spine shadows, round controls, status labels, Home/End/Space, click/drag/touch, reduced motion, and retained queued navigation.
-- [ ] **Step 4: Expand browser smoke** to verify file/offline, desktop landscape and edge translations, page-corner click, queueing, Home/End, reverse navigation, mobile portrait TouchEvent, buttons, and bounds.
+- [ ] **Step 3: Build the 3D shell** with orthographic camera, white stage, bounded pixel ratio/subdivisions/shadows, front/back canvas textures, curved page deformation, edge hover, round controls, Home/End/Space, pointer drag/touch, reduced motion, and target-page queueing.
+- [ ] **Step 4: Expand browser smoke** to verify file/offline, WebGL readiness, click, drag, touch pointer, buttons, queueing, Home/End, reverse navigation, bounds, and a parked render loop when settled.
 - [ ] **Step 5: Run `npm test` and `npm run check`**, expecting all tests and repository checks to pass.
 - [ ] **Step 6: Commit** with `feat: redesign offline flipbook interaction`.
 

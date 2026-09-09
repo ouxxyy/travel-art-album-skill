@@ -35,7 +35,15 @@ hermes 的 `hermes skills list` 是唯一能直接看到 skill 被宿主识别�
 
 ## 版本核对
 
-版本号写在 `SKILL.md` frontmatter 的 `version` 字段，改动 skill 内容时同步递增。`sync:skill` 输出每端的版本与文件数，`check:skill` 做逐文件 SHA-256 对比——任何一端落后或被改动都会显示 `✗`。
+版本号写在 `SKILL.md` frontmatter 的 `version` 字段，改动 skill 内容时同步递增。核对基于逐文件完整 SHA-256（64 位，不截断），另对全部「路径 哈希」行做一次总哈希得到单行聚合指纹，随每端输出。任何一端落后、被改动或多出文件都会显示 `✗`，并列出差异文件两侧的完整哈希；宿主端文件缺失时按宿主逐行报表（`✗ 缺失或不可读`），不会以崩溃堆栈收场。
+
+## 边界守卫
+
+同步前扫描载荷，命中以下任一形态即拒绝同步（退出码非 0，四端不写入）：POSIX 绝对路径 `/Users|/var|/tmp|/Volumes|/opt|/etc`（含 macOS `/private` 前缀）、`$HOME` 引用、`~/` 开头路径。守卫实现与负路径测试见 `scripts/payload-guard.mjs` 与 `tests/skill-sync.test.mjs`。
+
+## 负路径测试
+
+`node --test tests/skill-sync.test.mjs` 覆盖：守卫对 9 种绝对路径形态逐一拒绝、5 种近似写法不误伤、注入载荷后默认模式同步被拒且四端指纹不变、宿主端删文件后 `check:skill` 逐行报表非 0 退出、输出含完整 64 位哈希指纹。
 
 ## 演练记录（2026-09-09）
 

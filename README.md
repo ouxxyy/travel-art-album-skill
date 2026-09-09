@@ -20,6 +20,17 @@ npm run validate:batch-ready -- "/path/to/制作清单.json"
 
 生成物位于 `dist/prototype.html`。它内嵌自制占位纹理、CSS、Three.js 和曲面翻页逻辑，可通过 `file://` 离线打开。
 
+## 安装与同步
+
+skill 以本项目为唯一源，一条命令安装/更新到 dsh、hermes、codex、antigravity 四个宿主：
+
+```bash
+npm run sync:skill    # 安装/更新并核对
+npm run check:skill   # 只核对
+```
+
+详见 `docs/skill-install.md`。
+
 ## 当前限制
 
 - 原型只使用明确标注的占位插画，不代表真实生图效果。

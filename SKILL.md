@@ -1,11 +1,14 @@
 ---
 name: travel-art-album
+version: 0.2.1
 description: Convert a non-recursive folder of 10–30 travel photos into user-approved reference-image artwork and a single-file offline page-flip HTML album. Use when the user asks for a 重拍画册、旅行照片艺术化画册、离线翻页相册, or an installable cross-agent photo-to-art album workflow.
 ---
 
 # Travel Art Album
 
 当前为阶段一原型。执行时先阅读 `docs/capability-check.md` 与 `docs/source-license.md`，并按需只加载用户选择的 `references/styles/` 文件。
+
+本 skill 由项目仓库单源分发：在仓库内运行 `npm run sync:skill` 即安装/更新到 dsh、hermes、codex、antigravity 四个宿主，`npm run check:skill` 核对四端版本一致（详见 `docs/skill-install.md`）。
 
 ## 硬门禁
 

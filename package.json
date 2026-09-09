@@ -11,7 +11,9 @@
     "test": "npm run build:prototype && node --test tests/*.test.mjs && node tests/prototype-smoke.mjs",
     "validate:example": "node scripts/validate-manifest.mjs examples/mixed-style-manifest.json",
     "validate:manifest": "node scripts/validate-manifest.mjs",
-    "validate:batch-ready": "node scripts/validate-manifest.mjs --batch-ready"
+    "validate:batch-ready": "node scripts/validate-manifest.mjs --batch-ready",
+    "sync:skill": "node scripts/sync-skill.mjs",
+    "check:skill": "node scripts/sync-skill.mjs --check"
   },
   "dependencies": {
     "page-flip": "2.0.7",

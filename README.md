@@ -11,6 +11,11 @@ npm install
 npm run build:prototype
 npm test
 npm run check
+npm run validate:example
+# 实际清单结构检查
+npm run validate:manifest -- "/path/to/制作清单.json"
+# 批量前硬门禁
+npm run validate:batch-ready -- "/path/to/制作清单.json"
 ```
 
 生成物位于 `dist/prototype.html`。它内嵌自制占位纹理、CSS、Three.js 和曲面翻页逻辑，可通过 `file://` 离线打开。

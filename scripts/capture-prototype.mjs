@@ -19,8 +19,8 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.keyboard.press("Home");
   await page.waitForFunction(() => Math.abs(window.albumPrototype.currentSheet()) < .01 && !window.albumPrototype.isRendering());
-  await page.evaluate(() => window.albumPrototype.navigate(1));
-  await page.waitForFunction(() => Math.abs(window.albumPrototype.currentSheet() - 1) < .01 && !window.albumPrototype.isRendering());
+  await page.evaluate(() => window.albumPrototype.navigate(2));
+  await page.waitForFunction(() => window.albumPrototype.currentPage() === 2 && Math.abs(window.albumPrototype.currentSheet() - 1) < .01 && !window.albumPrototype.isRendering());
   await page.screenshot({ path: "test-results/3d-mobile.png" });
   console.log("captured 3D cover, open spread, and mobile evidence");
 } finally {

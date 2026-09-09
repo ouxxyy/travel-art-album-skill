@@ -74,6 +74,24 @@ try {
   assert.deepEqual(requests, []);
   assert.deepEqual(consoleErrors, []);
   console.log(`3D prototype smoke passed: ready ${readyMs}ms; file:// offline; WebGL; click/drag/touch; buttons/keyboard; queued bounds; idle render parked`);
+
+  const fallbackPage = await browser.newPage({ viewport: { width: 800, height: 600 } });
+  const pageErrors = [];
+  fallbackPage.on("pageerror", (error) => pageErrors.push(error.message));
+  await fallbackPage.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function getContext(type, ...args) {
+      if (type === "webgl" || type === "webgl2" || type === "experimental-webgl") return null;
+      return original.call(this, type, ...args);
+    };
+  });
+  await fallbackPage.goto(pathToFileURL(`${process.cwd()}/dist/prototype.html`).href);
+  await fallbackPage.waitForFunction(() => window.albumPrototype?.fallback === true);
+  assert.equal(await fallbackPage.locator("#fallback").isVisible(), true);
+  assert.equal(await fallbackPage.locator("#loading").isHidden(), true);
+  assert.deepEqual(pageErrors, []);
+  await fallbackPage.close();
+  console.log("WebGL-unavailable fallback passed: visible message, loading stopped, no uncaught page error");
 } finally {
   await browser.close();
 }

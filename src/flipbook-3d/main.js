@@ -108,8 +108,9 @@ try {
 } catch (error) {
   loading.hidden = true; fallback.hidden = false;
   fallback.querySelector("span").textContent = `当前浏览器无法启动 WebGL：${error.message}`;
-  throw error;
+  window.albumPrototype = { ready: false, fallback: true, error: error.message };
 }
+if (renderer) {
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
@@ -271,3 +272,4 @@ function resize(){const width=innerWidth,height=innerHeight,aspect=width/Math.ma
 addEventListener("resize",resize);resize();updateStatus();loading.hidden=true;
 window.albumPrototype={ready:true,renderer,currentSheet:()=>currentProgress,targetSheet:()=>targetSheet,currentPage:()=>targetPage,currentFocus:()=>currentFocus,pageCount:pageSpecs.length,sheetCount,navigate,renderCount:()=>renderCount,isRendering:()=>animationFrame!==null};
 requestRender();
+}

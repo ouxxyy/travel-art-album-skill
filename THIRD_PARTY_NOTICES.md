@@ -4,7 +4,7 @@
 
 This project redistributes the browser bundle from `page-flip@2.0.7`.
 
-Copyright © 2020 Nodlik. Licensed under the MIT License. The full license text is in `vendor/page-flip/LICENSE` and is also embedded as a source comment in generated standalone HTML files.
+Copyright © 2020 Nodlik. Licensed under the MIT License. The full license text is in `vendor/page-flip/LICENSE`. The current 3D prototype build does not bundle page-flip; if a future 2D build embeds it, its license text must be embedded with it.
 
 ## photo-to-poster-skills
 

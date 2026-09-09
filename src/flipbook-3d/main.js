@@ -178,6 +178,30 @@ const table = new THREE.Mesh(new THREE.PlaneGeometry(12,12),new THREE.MeshStanda
 table.position.z=-.035;table.receiveShadow = true;scene.add(table);
 
 const bookRig = new THREE.Group(); scene.add(bookRig);
+
+// 闭合态接触阴影：薄书离桌面太近，阴影贴图会丢失，改用椭圆渐变面片垫在书下。
+function makeContactShadow(centerX) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256; canvas.height = 256;
+  const context = canvas.getContext("2d");
+  // alphaMap 取绿色通道，渐变需用灰度而非透明度表达。
+  const gradient = context.createRadialGradient(128, 128, 18, 128, 128, 126);
+  gradient.addColorStop(0, "#ffffff");
+  gradient.addColorStop(.55, "#666666");
+  gradient.addColorStop(1, "#000000");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 256, 256);
+  const alphaMap = new THREE.CanvasTexture(canvas);
+  const material = new THREE.MeshBasicMaterial({ color: "#1c1a14", alphaMap, transparent: true, depthWrite: false, opacity: 0 });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(PAGE_WIDTH * 1.5, PAGE_HEIGHT * 1.22), material);
+  mesh.position.set(centerX, 0, -.02);
+  mesh.renderOrder = -1;
+  return mesh;
+}
+const rightShadow = makeContactShadow(PAGE_WIDTH * .5);
+const leftShadow = makeContactShadow(-PAGE_WIDTH * .5);
+bookRig.add(leftShadow, rightShadow);
+
 const sheets = [];
 for (let index = 0; index < pageSpecs.length / 2; index += 1) {
   const geometry = new THREE.PlaneGeometry(PAGE_WIDTH, PAGE_HEIGHT, PAGE_SUBDIVISIONS, 1);
@@ -240,6 +264,9 @@ function updateBook() {
   }
   const edgeCentering = currentProgress < 1 ? -PAGE_WIDTH*.5*(1-currentProgress) : currentProgress > sheetCount-1 ? PAGE_WIDTH*.5*(currentProgress-(sheetCount-1)) : 0;
   bookRig.position.x = edgeCentering + currentFocus;
+  // 左右两侧的接触阴影随书的占用淡入淡出：闭合在右时左侧无书，翻到末页右侧无书。
+  rightShadow.material.opacity = .6 * (1 - THREE.MathUtils.smoothstep(currentProgress, sheetCount - .6, sheetCount - .05));
+  leftShadow.material.opacity = .6 * THREE.MathUtils.smoothstep(currentProgress, .05, .6);
 }
 
 function pageToSheet(page) { return page <= 0 ? 0 : page >= pageSpecs.length - 1 ? sheetCount : Math.ceil(page / 2); }
@@ -309,9 +336,18 @@ canvas.addEventListener("pointerdown", (event) => {
   const seededFraction = previewAmount > 0 ? previewAmount : 0;
   const seededDirection = previewAmount > 0 ? hoverDirection : 0;
   hoverDirection=0; previewAmount=0;
-  const baseSheet=clamp(Math.round(spring.value),0,sheetCount);
-  const direction=seededDirection || chooseDirection(baseSheet,sheetCount,event.clientX,metrics.centerX);
-  pointerStart={pointerId:event.pointerId,x:event.clientX,y:event.clientY,time:performance.now(),baseSheet,direction,pageWidth:metrics.pageWidth,startFraction:seededFraction,fraction:seededFraction,moved:false,mobile:mobileMode,velocity:0,lastMoveAt:performance.now()};
+  // 飞行中抓页：按运动方向继承当前翻页进度作拖拽种子，避免基点取整造成的视觉回跳。
+  let baseSheet, direction, startFraction;
+  if (Math.abs(spring.velocity) > .05) {
+    direction = spring.velocity > 0 ? 1 : -1;
+    baseSheet = clamp(direction > 0 ? Math.floor(spring.value) : Math.ceil(spring.value), 0, sheetCount);
+    startFraction = Math.abs(spring.value - baseSheet);
+  } else {
+    baseSheet = clamp(Math.round(spring.value), 0, sheetCount);
+    direction = seededDirection || chooseDirection(baseSheet,sheetCount,event.clientX,metrics.centerX);
+    startFraction = seededFraction;
+  }
+  pointerStart={pointerId:event.pointerId,x:event.clientX,y:event.clientY,time:performance.now(),baseSheet,direction,pageWidth:metrics.pageWidth,startFraction,fraction:startFraction,moved:false,mobile:mobileMode,velocity:0,lastMoveAt:performance.now()};
   spring.value=clamp(currentProgress,0,sheetCount); spring.velocity=0;
   canvas.classList.add("is-dragging"); try{canvas.setPointerCapture?.(event.pointerId)}catch{} requestRender();
 });

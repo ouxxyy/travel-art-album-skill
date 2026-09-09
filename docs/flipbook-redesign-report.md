@@ -52,4 +52,10 @@ WebGL 降级测试会在页面初始化前强制让 `webgl/webgl2` context 返�
 - **细腻度**：翻页几何在弯折之上叠加页角扭转（随方向与弯折幅度变化）与静止纸弧，页面不再视觉上像刚体平板；落页带轻微过冲的落定感。
 - 以上几何与光影为按参考仓库交互思路自行推导的实现，未复制 Quick FlipBook/`three.modifiers` 代码（其许可不明，仍不打包）。
 
-证据更新：`npm test` 现为 17 项 Node 测试（新增悬停规则、弹簧物理、甩动判定、seed 接管共 5 项），浏览器 smoke 新增"拖到一半停住悬停不漂移、松手回弹到原页、真实甩动补完"三条断言；截图新增 `3d-hover-hold.png`（页面停在半空的悬停帧）。本机 Chrome headless + SwiftShader 实测 `ready` 约 5.5 秒；体积 546,350 bytes（gzip 约 140 KiB）仍在 750 KiB 上限内。
+独立复核（HEAD 434117f）结论"无 CRITICAL/HIGH、可交回验收一"，并指出两个 MEDIUM，均已修复：
+
+- **闭合态零投影**：薄书贴桌导致 shadow map 接触影丢失，改为 bookRig 下两片灰度 alphaMap 椭圆接触阴影（alphaMap 取绿色通道，需不透明灰度渐变），按左右页占用淡入淡出；封面首帧不再像贴在背景上。
+- **飞行中抓页回跳**：抓取拖拽基点原来按最近跨页取整，动画途中抓页会视觉回跳约 25% 页；现按弹簧速度方向继承飞行进度作拖拽种子（前向 floor/后向 ceil），实测 0.334 抓取前移 12px 到 0.486 无跳变，松手回位正常。
+- 顺带修复：`vendor/page-flip` 恢复与 npm `page-flip@2.0.7` 逐字节一致的上游原样（此前被格式化重排）；`docs/design.md` 悬停措辞更正。
+
+证据更新：`npm test` 现为 17 项 Node 测试（新增悬停规则、弹簧物理、甩动判定、seed 接管共 5 项），浏览器 smoke 新增"拖到一半停住悬停不漂移、松手回弹到原页、真实甩动补完"三条断言；截图新增 `3d-hover-hold.png`（页面停在半空的悬停帧）。本机 Chrome headless + SwiftShader 实测 `ready` 约 5.5 秒；体积 547,170 bytes（gzip 约 140 KiB）仍在 750 KiB 上限内。

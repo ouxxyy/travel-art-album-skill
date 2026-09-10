@@ -1,12 +1,12 @@
-# 重拍画册 Skill
+# 重拍画册
 
-把 10–30 张旅行照片，经过“风格小样确认 → 批量艺术化 → 单独生成封面 → 单文件离线翻页画册”的流程，做成可以直接分享的 HTML 画册。支持四种风格整册统一，也支持逐张混排；成品右上角可以打开系统打印对话框导出 PDF。
+旅行照片拍完，很多时候就留在相册里，很少再认真看一遍。这个 Skill 想做的事情很具体：把一组照片先做成风格小样，等你选定方向，再把它们整理成一份可以离线打开、翻页和导出 PDF 的旅行画册。
 
-如果这个 Skill 对你有帮助，欢迎在 GitHub 右上角点 Star。作者全平台同名：**欧八同学**。
+它适合 10–30 张照片。四种风格可以整本统一，也可以一张一张混着用：厚涂微缩、等距治愈积木、纸艺旅行，以及编辑旅行摄影 × 水彩手绘。
 
-## 效果展示
+## 先看看成品是什么感觉
 
-下面四张是专门为公开仓库生成的虚构示例，不含任何本地真人照片，也不代表某位真实旅行者。它们对应 Skill 内置的四种生图风格：
+下面的示例图是专门为这个公开仓库生成的虚构素材，不含本地真人照片，也不对应任何真实旅行者。四张图正好对应 Skill 内置的四种风格。
 
 <table>
   <tr>
@@ -17,36 +17,30 @@
   </tr>
 </table>
 
-实际使用时，智能体会先用你的照片制作风格小样，等你确认后再批量生成内页和单独封面，最后装订成单文件离线翻页画册。
+这是用同一组示例图做的翻页演示：
 
-### 画册翻页动图
+![旅行艺术画册翻页演示](assets/gallery/flipbook-demo.gif)
 
-下面这张 GIF 使用上面的四张公开示例图，模拟真实画册的左右跨页与翻页过程：
+## 它会怎么工作
 
-![四种风格的旅行艺术画册翻页效果](assets/gallery/flipbook-demo.gif)
+1. 先清点照片，只处理输入目录第一层，不动原图。
+2. 从照片里挑出人物近景、合照和环境照，做最多 12 张风格小样。
+3. 把小样给你看，等你明确确认风格；确认前不会批量生成。
+4. 按确认结果生成内页，再单独生成一张封面。
+5. 把图片和排版打包成一个离线 HTML 画册，浏览器打开就能翻页，也可以打印成 PDF。
 
-## 先说清楚：它是什么，不是什么
+人物辨识度和旅行事实优先。不会凭空增加人物、交换身份，也不会把你的私人照片放进这个公开仓库。
 
-- 这是给 Claude Code、Codex 等智能体使用的 Skill，不是一个单独点开就能自动生图的桌面 App。
-- 智能体必须能读取文件、执行脚本、查看图片，并支持把本地原图作为参考图传入图像编辑；缺一项就不能可靠完成流程。
-- 它不会偷偷批量处理照片：必须先展示代表照片的小样，并得到你明确的“验收一”确认。
-- 原图只读、不递归扫描；真实照片、制作清单和私人画册不要提交到公开仓库。
+## 怎么安装
 
-## 最直接的使用方法
+### 只安装 Skill
 
-### 1. 下载项目
+如果你只是想让 Codex 或 Claude Code 使用它，不需要先安装 Node 依赖。以 Codex 为例：
 
 ```bash
 git clone https://github.com/ouxxyy/travel-art-album-skill.git
 cd travel-art-album-skill
-npm install
-```
 
-### 2. 安装到你的智能体
-
-以 Codex 为例，把运行时需要的文件放到 `~/.codex/skills/travel-art-album/`：
-
-```bash
 mkdir -p ~/.codex/skills/travel-art-album/{docs,scripts}
 cp SKILL.md ~/.codex/skills/travel-art-album/
 cp -R references ~/.codex/skills/travel-art-album/
@@ -54,52 +48,61 @@ cp docs/capability-check.md docs/source-license.md ~/.codex/skills/travel-art-al
 cp scripts/validate-manifest.mjs ~/.codex/skills/travel-art-album/scripts/
 ```
 
-如果你使用 Claude Code，把上面路径中的 `~/.codex/skills/` 换成 `~/.claude/skills/`。其他宿主的目录和载荷说明见 [`docs/skill-install.md`](docs/skill-install.md)。
+使用 Claude Code 时，把上面的 `~/.codex/skills/` 换成 `~/.claude/skills/`。
 
-### 3. 给智能体的直白指令
+### 运行项目里的构建器和测试
 
-把下面这段发给智能体，并把路径换成你的照片目录：
-
-```text
-使用 travel-art-album，把 /path/to/my-travel-photos 里的旅行照片做成离线翻页画册。
-先只清点第一层的照片，检查宿主能力，选 3 张代表照分别做四种风格小样；展示小样并停下来等我明确确认。
-我确认前不要批量生图。确认后再生成内页、单独生成封面，运行清单校验和离线 HTML 构建，并告诉我输出文件路径和验证结果。
-```
-
-你也可以直接说：“帮我把这组旅行照片做成重拍画册”，但最好同时给出照片目录、书名，以及是否想统一一种风格。
-
-## 本地命令
+只有在你要运行原型、校验清单或构建 HTML 画册时，才需要安装依赖：
 
 ```bash
 npm install
 npm run build:prototype
 npm test
-npm run check
-npm run validate:example
-# 实际清单结构检查
-npm run validate:manifest -- "/path/to/制作清单.json"
-# 批量前硬门禁
-npm run validate:batch-ready -- "/path/to/制作清单.json"
-# 构建清单对应的单文件离线画册（可传入自定义清单路径）
-node scripts/build-album.mjs [manifest.json]
 ```
 
-原型生成物位于 `dist/prototype.html`；成品构建器默认以 `旅行的意义.html` 为文件名生成到私有验收目录，并把 Base64 页面数据写入该目录的忽略文件。两者都可通过 `file://` 离线打开。
+## 第一次使用时，可以这样说
 
-## 当前限制
+把照片目录换成你自己的路径，直接发给智能体：
 
-- 原型只使用明确标注的占位插画，不代表真实生图效果。
-- 用户验收一之前禁止进入批量生图。
-- 制作清单必须逐张记录并确认风格；四种风格可整册统一，也可混排。
-- 2D、3D 和媒体均可按效果需要采用，不设默认排除；但必须逐项核实许可或权利来源、离线体积和运行性能。用户私有原图与私人画册永不进入分享包。
-- Safari 真机/桌面浏览器尚未自动化验证；当前只验证本机 Google Chrome。
-- `photo-album-skill` 当前仓库未发现许可文件，因此仅作为设计参考，不复制代码。
+```text
+用 travel-art-album 把 /path/to/my-travel-photos 做成离线翻页画册。
+先清点第一层照片，选 3 张代表照做四种风格小样，给我看完后停下来等确认。
+确认前不要批量生成；确认后再做内页、单独封面和最终 HTML，并告诉我文件在哪里。
+```
 
-## 作者与全平台关注
+如果你已经准备好照片，也可以只说：“帮我把这组旅行照片做成重拍画册”，再补充书名和想统一的风格。
 
-全平台统一名称：**欧八同学**。如果平台没有直接打开个人主页，请在对应平台搜索这个名字：
+## 手动校验和构建
 
-- 微信公众号：请扫描下方二维码关注
+```bash
+# 校验示例清单
+npm run validate:example
+
+# 校验自己的清单
+node scripts/validate-manifest.mjs "/path/to/制作清单.json"
+
+# 确认可以进入批量阶段
+node scripts/validate-manifest.mjs "/path/to/制作清单.json" --batch-ready
+
+# 构建单文件离线画册
+node scripts/build-album.mjs "/path/to/制作清单.json"
+```
+
+原型输出在 `dist/prototype.html`。成品构建器默认输出 `旅行的意义.html`；具体输出位置以清单里的设置为准。生成的 HTML 可以直接用 `file://` 打开，不依赖外部网络。
+
+## 使用前需要知道的几件事
+
+- 宿主需要能读文件、执行脚本、查看图片，并支持把本地原图作为参考图交给图像编辑能力。
+- 原图只读，不递归扫描；支持 JPG、JPEG、PNG、WebP 和 HEIC。
+- 公开仓库里的示例图是虚构素材。真实照片、制作清单和私人画册请放在自己的验收目录，不要提交到 GitHub。
+- 原型里的占位插画只是交互演示，不等于真实生图效果。
+- 当前自动化检查覆盖本机 Chrome；Safari 和移动真机需要你自己再看一遍。
+
+## 作者
+
+作者全平台同名：**欧八同学**。
+
+- 微信公众号：扫码关注
 - 抖音：[搜索“欧八同学”](https://www.douyin.com/search/%E6%AC%A7%E5%85%AB%E5%90%8C%E5%AD%A6)
 - 小红书：[搜索“欧八同学”](https://www.xiaohongshu.com/search_result?keyword=%E6%AC%A7%E5%85%AB%E5%90%8C%E5%AD%A6)
 - X：[搜索“欧八同学”](https://x.com/search?q=%E6%AC%A7%E5%85%AB%E5%90%8C%E5%AD%A6&src=typed_query)
@@ -108,8 +111,8 @@ node scripts/build-album.mjs [manifest.json]
   <img src="assets/wechat-qr.jpg" alt="欧八同学微信公众号二维码" width="260">
 </p>
 
-喜欢这个项目的话，欢迎点 Star；遇到问题可以提交 Issue，并附上命令、错误信息和最小复现步骤，不要上传真实私人照片。
+如果这个项目对你有用，欢迎点个 Star。遇到问题时，提交命令、报错和最小复现步骤就够了；请不要上传真实私人照片。
 
-## 许可与来源
+## 许可
 
-第三方来源、版本和许可记录见 [`docs/source-license.md`](docs/source-license.md) 与 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。项目随附的第三方许可全文位于 `vendor/licenses/` 和 `references/styles/LICENSE`。
+第三方来源和许可记录见 [`docs/source-license.md`](docs/source-license.md) 与 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。随项目附带的许可全文位于 `vendor/licenses/` 和 `references/styles/LICENSE`。

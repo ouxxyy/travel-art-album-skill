@@ -50,8 +50,6 @@ cp scripts/validate-manifest.mjs ~/.codex/skills/travel-art-album/scripts/
 
 如果你使用 Claude Code，把上面路径中的 `~/.codex/skills/` 换成 `~/.claude/skills/`。其他宿主的目录和载荷说明见 [`docs/skill-install.md`](docs/skill-install.md)。
 
-`npm run sync:skill` 是维护者在本机同时同步 dsh、Hermes、Codex、Antigravity 的命令；普通使用者不需要运行它。
-
 ### 3. 给智能体的直白指令
 
 把下面这段发给智能体，并把路径换成你的照片目录：

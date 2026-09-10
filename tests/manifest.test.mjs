@@ -27,7 +27,8 @@ const manifest = () => ({
   ],
 });
 
-test("accepts all three styles in one ordered manifest", () => {
+test("accepts all four styles in one ordered manifest", () => {
+  manifest().photos.push(photo(4, "editorial-travel-watercolor"));
   assert.deepEqual(validateManifest(manifest()), []);
 });
 
@@ -36,8 +37,8 @@ test("rejects a missing or unknown per-photo style", () => {
   delete value.photos[0].style;
   value.photos[1].style = "watercolor";
   assert.deepEqual(validateManifest(value), [
-    "photos[0].style must be one of impasto-miniature, isometric-healing-blocks, papercraft-travel",
-    "photos[1].style must be one of impasto-miniature, isometric-healing-blocks, papercraft-travel",
+    "photos[0].style must be one of impasto-miniature, isometric-healing-blocks, papercraft-travel, editorial-travel-watercolor",
+    "photos[1].style must be one of impasto-miniature, isometric-healing-blocks, papercraft-travel, editorial-travel-watercolor",
   ]);
 });
 

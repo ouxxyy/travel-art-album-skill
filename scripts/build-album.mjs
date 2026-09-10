@@ -1,0 +1,221 @@
+import { build } from "esbuild";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { basename, dirname, extname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const manifestPath = resolve(root, process.argv[2] || "private-acceptance/manifest.json");
+const dataPath = resolve(dirname(manifestPath), ".album-data.js");
+
+const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+console.log(`[build-album] Loading manifest: "${manifest.book.title}"...`);
+const quality = {
+  minWidth: manifest.quality?.min_artwork_width ?? 2000,
+  minHeight: manifest.quality?.min_artwork_height ?? 2600,
+};
+
+function imageSize(buffer, extension) {
+  if (extension === '.png') {
+    if (buffer.toString('ascii', 1, 4) !== 'PNG') throw new Error('invalid PNG');
+    return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+  }
+  if (buffer.readUInt16BE(0) !== 0xffd8) throw new Error('invalid JPEG');
+  let offset = 2;
+  while (offset + 9 < buffer.length) {
+    if (buffer[offset] !== 0xff) {
+      offset += 1;
+      continue;
+    }
+    const marker = buffer[offset + 1];
+    const segmentLength = buffer.readUInt16BE(offset + 2);
+    const sizeMarker =
+      (marker >= 0xc0 && marker <= 0xc3) ||
+      (marker >= 0xc5 && marker <= 0xc7) ||
+      (marker >= 0xc9 && marker <= 0xcb) ||
+      (marker >= 0xcd && marker <= 0xcf);
+    if (sizeMarker) return { width: buffer.readUInt16BE(offset + 7), height: buffer.readUInt16BE(offset + 5) };
+    offset += 2 + segmentLength;
+  }
+  throw new Error('JPEG size marker not found');
+}
+
+function assertArtworkQuality(absPath, buffer) {
+  const extension = extname(absPath).toLowerCase();
+  if (!['.jpg', '.jpeg', '.png'].includes(extension))
+    throw new Error(`${basename(absPath)} requires JPEG or PNG for dimension validation: ${extension}`);
+  const { width, height } = imageSize(buffer, extension);
+  if (width < quality.minWidth || height < quality.minHeight)
+    throw new Error(`${basename(absPath)} is below the ${quality.minWidth}x${quality.minHeight} artwork quality floor`);
+  if (Math.abs(width / height - 3 / 4) > 0.01)
+    throw new Error(`${basename(absPath)} must keep a 3:4 artwork ratio (${width}x${height})`);
+}
+
+async function resolveAsset(relPath) {
+  const candidates = [
+    resolve(root, relPath),
+    resolve(dirname(manifestPath), relPath),
+  ];
+  for (const candidate of candidates) {
+    try {
+      await readFile(candidate);
+      return candidate;
+    } catch {}
+  }
+  throw new Error(`asset not found: ${relPath}`);
+}
+
+// 转换图片为 base64；支持仓库相对路径和清单相对路径。
+// 图片进入成品前必须通过 MIME、尺寸和比例校验。
+async function toBase64DataUrl(relPath, role) {
+  const absPath = await resolveAsset(relPath);
+  const buffer = await readFile(absPath);
+  const extension = extname(absPath).toLowerCase();
+  if (role === 'artwork' || role === 'cover') assertArtworkQuality(absPath, buffer);
+  const mime = extension === '.png' ? 'image/png' : 'image/jpeg';
+  return `data:${mime};base64,${buffer.toString('base64')}`;
+}
+
+const theme = manifest.book?.theme || {};
+if (manifest.cover?.generated_separately !== true) {
+  throw new Error("cover must be generated separately from an input-folder photo");
+}
+const coverImage = await toBase64DataUrl(manifest.cover.artwork_path, 'cover');
+const photoPages = await Promise.all(
+  (manifest.photos || [])
+    .slice()
+    .sort((a, b) => a.order - b.order)
+    .map(async (photo, index) => {
+      const sourceName = String(photo.title || photo.caption || photo.source_path || "照片").split("/").pop();
+      const title = photo.title || photo.caption || sourceName.replace(/\.[^/.]+$/, "");
+      const imageBase64 = await toBase64DataUrl(photo.artwork_path, 'artwork');
+      return {
+        kind: "artwork",
+        plate: "PLATE " + String(index + 1).padStart(2, "0"),
+        title,
+        subtitle: photo.subtitle || "",
+        theme,
+        imageBase64,
+      };
+    }),
+);
+const albumPages = [
+  { kind: "cover", title: manifest.book.title, subtitle: manifest.book.subtitle || "", theme, imageBase64: coverImage },
+  { kind: "endpaper", title: manifest.book.endpaper_title || "", subtitle: manifest.book.endpaper_subtitle || "", line: manifest.book.endpaper_line || "", theme },
+  ...photoPages,
+  { kind: "endpaper", title: "", subtitle: "", line: "", theme },
+  { kind: "colophon", title: manifest.book.colophon_title || "", lines: Array.isArray(manifest.book.colophon_lines) ? manifest.book.colophon_lines : [], theme },
+  { kind: "back", title: manifest.book.title, subtitle: "", theme },
+];
+if (albumPages.length % 2 !== 0) {
+  const colophonIndex = albumPages.findIndex((page) => page.kind === "colophon");
+  albumPages.splice(colophonIndex, 0, { kind: "endpaper", title: "", subtitle: "", line: "", theme });
+}
+
+const albumDataContent = `// Auto-generated by scripts/build-album.mjs
+export const bookMeta = ${JSON.stringify(manifest.book, null, 2)};
+export const albumPages = ${JSON.stringify(albumPages, null, 2)};
+`;
+
+await mkdir(dirname(dataPath), { recursive: true });
+await writeFile(dataPath, albumDataContent, "utf8");
+console.log(`[build-album] Generated ${dataPath} with ${albumPages.length} pages.`);
+
+const read = (p) => readFile(resolve(root, p), "utf8");
+const [styles, referenceLicense, threeLicense] = await Promise.all([
+  read("src/flipbook-3d/style.css"),
+  read("vendor/licenses/reference-project-LICENSE"),
+  read("vendor/licenses/three-LICENSE"),
+]);
+
+console.log("[build-album] Bundling 3D engine and artwork assets with esbuild...");
+const result = await build({
+  stdin: {
+    contents: await read("src/album-app/main.js"),
+    resolveDir: resolve(root, "src/album-app"),
+    sourcefile: resolve(root, "src/album-app/main.js"),
+    loader: "js",
+  },
+  bundle: true,
+  write: false,
+  format: "iife",
+  platform: "browser",
+  target: ["chrome100", "safari15"],
+  minify: true,
+  charset: "utf8",
+  legalComments: "none",
+  plugins: [
+    {
+      name: "private-album-data",
+      setup(pluginBuild) {
+        pluginBuild.onResolve({ filter: /^\.\/album-data\.js$/ }, () => ({ path: dataPath }));
+      },
+    },
+  ],
+});
+
+const bundle = new TextDecoder()
+  .decode(result.outputFiles[0].contents)
+  .replaceAll("</script", "<\\/script");
+
+const licenses = `Reference project (MIT):\n${referenceLicense}\n\nThree.js (MIT):\n${threeLicense}`.replaceAll(
+  "-->",
+  "--&gt;"
+);
+const htmlEscape = (value) => String(value).replace(/[&<>"']/g, (character) => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+}[character]));
+const safeTitle = htmlEscape(manifest.book.title);
+const safeThemeColor = htmlEscape(manifest.book.theme?.coverStart || '#e3efed');
+
+const html = `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="${safeThemeColor}">
+<meta name="description" content="旅行的意义｜${safeTitle}">
+<title>${safeTitle}｜旅行的意义</title>
+<!-- Third-party notices:\n${licenses}\n-->
+<style>${styles}</style>
+</head>
+<body data-sheet="0">
+<main class="app-shell">
+  <canvas id="book-scene" aria-label="可交互的旅行的意义"></canvas>
+  <nav class="reader-controls" aria-label="画册翻页">
+    <button class="page-button" id="previous-page" type="button" aria-label="上一页"><span aria-hidden="true">‹</span></button>
+    <span class="page-status" id="page-state" aria-live="polite">封面</span>
+    <button class="page-button" id="next-page" type="button" aria-label="下一页"><span aria-hidden="true">›</span></button>
+  </nav>
+  <div class="loading" id="loading" role="status">正在打开旅行的意义</div>
+  <div class="fallback" id="fallback" hidden>
+    <div>
+      <strong>无法显示旅行的意义</strong>
+      <span>当前浏览器未提供可用的 WebGL。</span>
+    </div>
+  </div>
+  <p class="sr-only">可点击画册左右两侧、水平拖动，或使用左右方向键、空格、Home 和 End 进行翻页。</p>
+</main>
+<button class="pdf-export" id="export-pdf" type="button" aria-label="导出 PDF" title="打开打印对话框后选择存储为 PDF">导出 PDF</button>
+<section id="pdf-export-surface" aria-hidden="true"></section>
+<script>${bundle}</script>
+</body>
+</html>`;
+
+const outputPrivate = resolve(root, manifest.outputs?.private_html || "private-acceptance/旅行的意义.html");
+await mkdir(dirname(outputPrivate), { recursive: true });
+await writeFile(outputPrivate, html, "utf8");
+
+const outputUserPath = manifest.outputs?.user_html;
+if (outputUserPath) {
+  await mkdir(dirname(resolve(root, outputUserPath)), { recursive: true });
+  await writeFile(resolve(root, outputUserPath), html, "utf8");
+}
+
+const sizeMB = (Buffer.byteLength(html) / (1024 * 1024)).toFixed(2);
+console.log(`[build-album] SUCCESS! Built standalone offline flipbook:`);
+console.log(`  -> ${outputPrivate} (${sizeMB} MB)`);
+if (outputUserPath) console.log(`  -> ${resolve(root, outputUserPath)} (${sizeMB} MB)`);

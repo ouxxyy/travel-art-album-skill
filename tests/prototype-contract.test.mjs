@@ -9,7 +9,7 @@ test("3D runtime owns page geometry, interaction, and bounded rendering", async 
   assert.match(main, /new THREE\.OrthographicCamera/);
   assert.match(
     main,
-    /new THREE\.PlaneGeometry\(PAGE_WIDTH, PAGE_HEIGHT, PAGE_SUBDIVISIONS/,
+    /new\s+THREE\.PlaneGeometry\(\s*PAGE_WIDTH,\s*PAGE_HEIGHT,\s*PAGE_SUBDIVISIONS/,
   );
   assert.match(main, /positions\.setZ/);
   assert.match(main, /THREE\.FrontSide/);

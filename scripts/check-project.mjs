@@ -13,6 +13,7 @@ const required = [
   "references/styles/impasto-miniature.md",
   "references/styles/isometric-healing-blocks.md",
   "references/styles/papercraft-travel.md",
+  "references/styles/editorial-travel-watercolor.md",
   "vendor/page-flip/LICENSE",
   "vendor/page-flip/page-flip.browser.js",
   "vendor/licenses/reference-project-LICENSE",

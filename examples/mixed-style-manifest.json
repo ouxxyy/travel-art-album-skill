@@ -38,6 +38,18 @@
       "artwork_path": null,
       "attempts": 0,
       "qa_status": "pending"
+    },
+    {
+      "source_path": "照片 04.jpg",
+      "source_fingerprint": "sha256:0000000000000000000000000000000000000000000000000000000000000004",
+      "order": 4,
+      "orientation": "landscape",
+      "style": "editorial-travel-watercolor",
+      "style_version": "2026-09-10",
+      "style_confirmed": true,
+      "artwork_path": null,
+      "attempts": 0,
+      "qa_status": "pending"
     }
   ]
 }

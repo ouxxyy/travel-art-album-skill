@@ -27,7 +27,7 @@ hermes 的 `hermes skills list` 是唯一能直接看到 skill 被宿主识别�
 只装 skill 运行时需要的文件，保持相对布局：
 
 - `SKILL.md`（含版本号）
-- `references/`（三种风格规范 + 许可）
+- `references/`（四种风格规范 + 许可）
 - `docs/capability-check.md`、`docs/source-license.md`
 - `scripts/validate-manifest.mjs`（制作清单校验，SKILL.md 流程引用）
 

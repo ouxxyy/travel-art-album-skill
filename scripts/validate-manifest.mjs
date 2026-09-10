@@ -5,6 +5,7 @@ export const ALLOWED_STYLES = [
   "impasto-miniature",
   "isometric-healing-blocks",
   "papercraft-travel",
+  "editorial-travel-watercolor",
 ];
 
 export function validateManifest(value, { batchReady = false } = {}) {

@@ -8,7 +8,14 @@ export function chooseDirection(sheet, sheetCount, pointerX, centerX) {
   return pointerX < centerX ? -1 : 1;
 }
 
-export function dragTarget({ baseSheet, direction, deltaX, pageWidth, sheetCount, startFraction = 0 }) {
+export function dragTarget({
+  baseSheet,
+  direction,
+  deltaX,
+  pageWidth,
+  sheetCount,
+  startFraction = 0,
+}) {
   const travel = direction > 0 ? -deltaX : deltaX;
   const fraction = clamp(startFraction + travel / Math.max(1, pageWidth), 0, 1);
   return {
@@ -24,21 +31,32 @@ const FLICK = { maxElapsedMs: 220, minFraction: 0.12, minVelocity: 1.5 };
 
 export function releaseDecision({ fraction, elapsedMs, velocity }) {
   if (fraction >= COMMIT_FRACTION) return "complete";
-  const isFlick = elapsedMs <= FLICK.maxElapsedMs
-    && fraction >= FLICK.minFraction
-    && Math.abs(velocity) >= FLICK.minVelocity;
+  const isFlick =
+    elapsedMs <= FLICK.maxElapsedMs &&
+    fraction >= FLICK.minFraction &&
+    Math.abs(velocity) >= FLICK.minVelocity;
   return isFlick ? "complete" : "return";
 }
 
 // 半隐式欧拉阻尼弹簧。fall 对应书页坠落（略过冲后落定），return 对应轻抬回位（不过冲）。
-const tuned = (stiffness, ratio) => ({ stiffness, damping: 2 * Math.sqrt(stiffness) * ratio });
+const tuned = (stiffness, ratio) => ({
+  stiffness,
+  damping: 2 * Math.sqrt(stiffness) * ratio,
+});
 export const SPRING = {
   fall: tuned(34, 0.82),
   return: tuned(30, 1.05),
 };
 export const SETTLE = { distance: 0.001, velocity: 0.002 };
 
-export function springStep({ value, velocity, target, stiffness, damping, delta }) {
+export function springStep({
+  value,
+  velocity,
+  target,
+  stiffness,
+  damping,
+  delta,
+}) {
   const acceleration = -stiffness * (value - target) - damping * velocity;
   const nextVelocity = velocity + acceleration * delta;
   return { value: value + nextVelocity * delta, velocity: nextVelocity };
@@ -47,9 +65,18 @@ export function springStep({ value, velocity, target, stiffness, damping, delta 
 // 边缘预览：掀起要快、收回要慢，接近真实书页被指尖掀起的迟滞感。
 export const PREVIEW_EASING = { attack: 18, release: 12 };
 
-export function edgePreviewDirection({ sheet, sheetCount, pointerX, centerX, pageWidth, edgeZone }) {
-  if (sheet <= 0) return Math.abs(pointerX - (centerX + pageWidth / 2)) <= edgeZone ? 1 : 0;
-  if (sheet >= sheetCount) return Math.abs(pointerX - (centerX - pageWidth)) <= edgeZone ? -1 : 0;
+export function edgePreviewDirection({
+  sheet,
+  sheetCount,
+  pointerX,
+  centerX,
+  pageWidth,
+  edgeZone,
+}) {
+  if (sheet <= 0)
+    return Math.abs(pointerX - (centerX + pageWidth / 2)) <= edgeZone ? 1 : 0;
+  if (sheet >= sheetCount)
+    return Math.abs(pointerX - (centerX - pageWidth)) <= edgeZone ? -1 : 0;
   if (Math.abs(pointerX - (centerX - pageWidth)) <= edgeZone) return -1;
   if (Math.abs(pointerX - (centerX + pageWidth)) <= edgeZone) return 1;
   return 0;

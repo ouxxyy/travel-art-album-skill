@@ -5,6 +5,9 @@
 node_modules/
 .research/
 private-acceptance/
+测试相册/
+惠州野海滩/
+
 dist/
 coverage/
 test-results/

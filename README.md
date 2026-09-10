@@ -4,6 +4,21 @@
 
 如果这个 Skill 对你有帮助，欢迎在 GitHub 右上角点 Star。作者全平台同名：**欧八同学**。
 
+## 效果展示
+
+下面四张是专门为公开仓库生成的虚构示例，不含任何本地真人照片，也不代表某位真实旅行者。它们对应 Skill 内置的四种生图风格：
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/gallery/gallery-impasto-miniature.jpg" alt="厚涂微缩示例" width="210"><br><sub>厚涂微缩</sub></td>
+    <td align="center"><img src="assets/gallery/gallery-isometric-healing-blocks.jpg" alt="等距治愈积木示例" width="210"><br><sub>等距治愈积木</sub></td>
+    <td align="center"><img src="assets/gallery/gallery-papercraft-travel.jpg" alt="纸艺旅行示例" width="210"><br><sub>纸艺旅行</sub></td>
+    <td align="center"><img src="assets/gallery/gallery-editorial-travel-watercolor.jpg" alt="编辑旅行摄影水彩手绘示例" width="210"><br><sub>编辑旅行摄影 × 水彩手绘</sub></td>
+  </tr>
+</table>
+
+实际使用时，智能体会先用你的照片制作风格小样，等你确认后再批量生成内页和单独封面，最后装订成单文件离线翻页画册。
+
 ## 先说清楚：它是什么，不是什么
 
 - 这是给 Claude Code、Codex 等智能体使用的 Skill，不是一个单独点开就能自动生图的桌面 App。
@@ -66,17 +81,6 @@ node scripts/build-album.mjs [manifest.json]
 ```
 
 原型生成物位于 `dist/prototype.html`；成品构建器默认以 `旅行的意义.html` 为文件名生成到私有验收目录，并把 Base64 页面数据写入该目录的忽略文件。两者都可通过 `file://` 离线打开。
-
-## 安装与同步
-
-skill 以本项目为唯一源，一条命令安装/更新到 dsh、hermes、codex、antigravity 四个宿主：
-
-```bash
-npm run sync:skill    # 安装/更新并核对
-npm run check:skill   # 只核对
-```
-
-详见 `docs/skill-install.md`。
 
 ## 当前限制
 

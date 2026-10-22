@@ -1,8 +1,20 @@
-# 重拍画册
+# 重拍画册｜旅行照片艺术画册与离线翻页相册 Skill
 
 旅行照片拍完，很多时候就留在相册里，很少再认真看一遍。这个 Skill 想做的事情很具体：把一组照片先做成风格小样，等你选定方向，再把它们整理成一份可以离线打开、翻页和导出 PDF 的旅行画册。
 
 它适合 10–30 张照片。四种风格可以整本统一，也可以一张一张混着用：厚涂微缩、等距治愈积木、纸艺旅行，以及编辑旅行摄影 × 水彩手绘。
+
+[使用示例](#quick-example) · [开始使用](#quick-start) · [English](#english-overview)
+
+<a id="quick-example"></a>
+
+## 一次使用示例
+
+**输入示例：** 一个目录第一层的 18 张旅行照片，想尝试纸艺旅行风格，并保留人物辨识度。
+
+**输出：** 先清点照片并制作少量风格小样，等你确认后再批量处理，最后打包为单文件 HTML 翻页画册；成品可离线翻阅，也可用浏览器打印 PDF。原图只读，确认前不进入批量阶段。
+
+下方画廊和 GIF 使用公开虚构素材。可按 [安装说明](#quick-start) 使用 Skill，构建清单结构见 [混合风格示例](examples/mixed-style-manifest.json)。
 
 ## 先看看成品是什么感觉
 
@@ -30,6 +42,8 @@
 5. 把图片和排版打包成一个离线 HTML 画册，浏览器打开就能翻页，也可以打印成 PDF。
 
 人物辨识度和旅行事实优先。不会凭空增加人物、交换身份，也不会把你的私人照片放进这个公开仓库。
+
+<a id="quick-start"></a>
 
 ## 怎么安装
 
@@ -97,6 +111,38 @@ node scripts/build-album.mjs "/path/to/制作清单.json"
 - 公开仓库里的示例图是虚构素材。真实照片、制作清单和私人画册请放在自己的验收目录，不要提交到 GitHub。
 - 原型里的占位插画只是交互演示，不等于真实生图效果。
 - 当前自动化检查覆盖本机 Chrome；Safari 和移动真机需要你自己再看一遍。
+
+## 常见问题
+
+### 只是安装 Skill，也要 npm install 吗？
+
+不需要。只有运行构建器、原型或测试时才安装 Node 依赖，具体见 [安装说明](#quick-start)。
+
+### 可以直接把整批照片都变成插画吗？
+
+先做小样并等你明确确认风格，再进入批量阶段；人物辨识度和旅行事实优先。
+
+### 离线相册代表生图也离线吗？
+
+不代表。离线的是最终 HTML；图像编辑依赖宿主提供的参考图能力，数据处理和费用取决于所选服务。
+
+### 所有格式和浏览器都经过验收了吗？
+
+当前自动化检查覆盖本机 Chrome。真实 HEIC、Safari、移动真机及人物辨识度仍需按实际素材复核，详见 [能力检查](docs/capability-check.md)。
+
+<a id="english-overview"></a>
+
+## English overview
+
+A travel photo album Agent Skill that turns 10–30 photos into approved style samples and a single-file offline HTML flipbook, with browser PDF printing. Source photos stay read-only; only the input folder's first level is processed.
+
+Follow [installation](#quick-start). Installing the Skill does not require npm dependencies. Your host must support reference-image editing, and batch generation starts only after style approval. Offline describes the finished album, not the image-generation service. Review [capability limits](docs/capability-check.md) and [source licenses](docs/source-license.md).
+
+## 相关项目
+
+[欧八同学的 AI Skills 与跳槽涨薪工具合集](https://github.com/ouxxyy/ouba-classmate)，还可以接着使用：
+
+- [把照片或创意整理成视频分镜](https://github.com/ouxxyy/storyboard-scavenger)
 
 ## 作者
 

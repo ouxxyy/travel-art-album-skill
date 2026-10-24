@@ -4,6 +4,9 @@
 
 它适合 10–30 张照片。四种风格可以整本统一，也可以一张一张混着用：厚涂微缩、等距治愈积木、纸艺旅行，以及编辑旅行摄影 × 水彩手绘。
 
+> [!TIP]
+> 🎁 扫码关注公众号「欧八同学」，免费领取 AI 案例与 Skill《大厂产品AI经验编程 200 套》→ [去扫码](#author)
+
 [使用示例](#quick-example) · [开始使用](#quick-start) · [English](#english-overview)
 
 <a id="quick-example"></a>
@@ -143,13 +146,16 @@ Follow [installation](#quick-start). Installing the Skill does not require npm d
 [欧八同学的 AI Skills 与跳槽涨薪工具合集](https://github.com/ouxxyy/ouba-classmate)，还可以接着使用：
 
 - [把照片或创意整理成视频分镜](https://github.com/ouxxyy/storyboard-scavenger)
+- 全部项目与作者主页：[github.com/ouxxyy](https://github.com/ouxxyy)
+
+<a id="author"></a>
 
 ## 作者
 
 作者全平台同名：**欧八同学**。
 
 - 个人主页 / 联系我：[albertou.redboook.cn](https://albertou.redboook.cn/)
-- 微信公众号：扫码关注
+- 微信公众号：扫码关注，免费领取 AI 案例与 Skill《大厂产品AI经验编程 200 套》，免费领取 AI 案例与 Skill《大厂产品AI经验编程 200 套》
 - 抖音：[搜索“欧八同学”](https://www.douyin.com/search/%E6%AC%A7%E5%85%AB%E5%90%8C%E5%AD%A6)
 - 小红书：[搜索“欧八同学”](https://www.xiaohongshu.com/search_result?keyword=%E6%AC%A7%E5%85%AB%E5%90%8C%E5%AD%A6)
 - X：[搜索“欧八同学”](https://x.com/search?q=%E6%AC%A7%E5%85%AB%E5%90%8C%E5%AD%A6&src=typed_query)
@@ -157,6 +163,8 @@ Follow [installation](#quick-start). Installing the Skill does not require npm d
 <p align="center">
   <img src="assets/wechat-qr.jpg" alt="欧八同学微信公众号二维码" width="260">
 </p>
+
+<p align="center"><sub>扫码关注「欧八同学」，免费领取《大厂产品AI经验编程 200 套》</sub></p>
 
 如果这个项目对你有用，欢迎点个 Star。遇到问题时，提交命令、报错和最小复现步骤就够了；请不要上传真实私人照片。
 

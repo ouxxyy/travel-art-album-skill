@@ -1,5 +1,20 @@
 # 重拍画册｜旅行照片艺术画册与离线翻页相册 Skill
 
+<!-- discovery:start -->
+## 旅行照片艺术画册与离线 HTML 翻页相册
+
+**怎样把旅行照片做成能离线翻页、打印 PDF 的艺术画册？** 先清点 10–30 张照片、确认艺术风格小样，再制作单文件 HTML 翻页相册；成品支持离线阅读和浏览器打印。
+
+Travel photo art album and offline HTML flipbook.
+
+**开始使用：** [安装与制作流程](#quick-start) · [输入与小样示例](#quick-example)。
+
+**使用边界：** 原图只读，确认小样后才批量处理；成品离线不代表艺术化生成离线，图像模型可能产生费用。
+
+[按任务浏览欧八同学的全部工具](https://github.com/ouxxyy/ouba-classmate#按需求找)；如果本项目有帮助，欢迎收藏当前仓库。
+
+<!-- discovery:end -->
+
 <!-- hero:start -->
 
 <p>

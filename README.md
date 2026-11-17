@@ -32,7 +32,7 @@ Travel photo art album and offline HTML flipbook.
   <a href="https://github.com/ouxxyy"><img src="https://img.shields.io/badge/PROFILE-ouxxyy-30363d?style=for-the-badge" alt="Author Profile"></a>
 </p>
 
-<img src="assets/divider.svg" width="100%" alt="">
+<img src="assets/divider.svg" width="100%" alt="section divider">
 
 <!-- hero:end -->
 

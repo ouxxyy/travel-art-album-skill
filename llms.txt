@@ -1,0 +1,15 @@
+# 重拍画册（travel-art-album-skill）
+
+30 秒核心结论： 适配 10–30 张旅行照片 · 4 种艺术风格先出小样门禁 · 单文件离线 3D 翻页 HTML（支持打印 PDF） · MIT 开源 0 元 · 更新于 2026-11-21。
+
+## 解决什么问题
+问：怎样把旅行照片做成能离线翻页、打印 PDF 的艺术画册？
+答：先清点 10–30 张照片、确认 4 种艺术风格小样，再制作单文件离线 3D HTML 翻页相册；成品支持离线阅读和浏览器打印 PDF。
+
+## 使用边界与许可
+原图只读，确认小样后才批量处理；成品离线不代表艺术化生成离线，图像模型可能产生费用。
+
+## 相关入口
+- 仓库主页：https://github.com/ouxxyy/travel-art-album-skill
+- 套件总览：https://github.com/ouxxyy/ouba-classmate
+- 作者咨询与免费自测站：https://albertou.redboook.cn/

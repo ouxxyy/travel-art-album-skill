@@ -7,9 +7,9 @@
 
 Travel photo art album and offline HTML flipbook.
 
-**30 秒核心结论：** 适配 10–30 张旅行照片 · 4 种艺术风格先出小样门禁 · 单文件离线 3D 翻页 HTML（支持打印 PDF） · MIT 开源 0 元 · 更新于 2026-11-21。
+**第一次使用可以这样试**　选一个旅行照片文件夹，用一张代表照片比较风格小样，确认后再处理整组。最后交付的 HTML 可离线翻阅，图像生成取决于所用宿主和服务。
 
-**一键安装 / 收藏：** `npx skills add ouxxyy/ouba-classmate --skill travel-art-album-skill` ｜ `claude plugin marketplace add ouxxyy/ouba-classmate` ｜ `gh api -X PUT /user/starred/ouxxyy/travel-art-album-skill`
+**安装：** `npx skills add ouxxyy/ouba-classmate --skill travel-art-album`
 
 **开始使用：** [安装与制作流程](#quick-start) · [输入与小样示例](#quick-example)。
 
